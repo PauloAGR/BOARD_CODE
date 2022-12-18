@@ -7,13 +7,6 @@
 #include <WiFi.h>
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
-/*
- * This ESP32 code is created by esp32io.com
- *
- * This ESP32 code is released in the public domain
- *
- * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-light-sensor
- */
 
 #define LIGHT_SENSOR_PIN 36 // ESP32 pin GIOP36 (ADC0)
 
@@ -73,20 +66,17 @@ void readLDR()
   }
 }
 
-void setup()
+void fileSystemCheck()
 {
-
-  Serial.begin(115200);
-  Serial.println("Starting the Real-time Chart display of Sensor Readings ..");
-
-  // Begin LittleFS for ESP8266 or SPIFFS for ESP32
   if (!SPIFFS.begin())
   {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
+}
 
-  // Connect to WIFI
+void enableWifi()
+{
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
@@ -94,14 +84,18 @@ void setup()
     Serial.printf("WiFi Failed!\n");
     return;
   }
-
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+}
 
-  // attach AsyncWebSocket
+void webSocketInit()
+{
   webSocket.onEvent(onEvent);
   server.addHandler(&webSocket);
+}
 
+void webServerInit()
+{
   // Route for root index.html
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { 
@@ -113,23 +107,42 @@ void setup()
   // Route for root index.css
   server.on("/assets/index-2613cd82.css", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-    AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/assets/index-2613cd82.css.gz", "text/css");
-        response->addHeader("Content-Encoding", "gzip");
-        response->addHeader("Cache-Control", "max-age=86400"); // 1 día
-        request->send(response); });
+              AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/assets/index-2613cd82.css.gz", "text/css");
+              response->addHeader("Content-Encoding", "gzip");
+              response->addHeader("Cache-Control", "max-age=86400"); // 1 día
+              request->send(response); });
 
   // Route for root index.js
   server.on("/assets/index-9fbb2826.js", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-        AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/assets/index-9fbb2826.js.gz", "application/javascript");
-        response->addHeader("Content-Encoding","gzip");
-        response->addHeader("Cache-Control","max-age=86400"); // 1 día
-        request->send(response); });
+              AsyncWebServerResponse* response = request->beginResponse(SPIFFS, "/assets/index-9fbb2826.js.gz", "application/javascript");
+              response->addHeader("Content-Encoding","gzip");
+              response->addHeader("Cache-Control","max-age=86400"); // 1 día
+              request->send(response); });
 
   server.onNotFound(notFound);
 
   // Start the server
   server.begin();
+}
+
+void setup()
+{
+
+  Serial.begin(115200);
+  Serial.println("Starting system...");
+
+  // Begin LittleFS for ESP8266 or SPIFFS for ESP32
+  fileSystemCheck();
+
+  // Connect to WIFI
+  enableWifi();
+
+  // attach AsyncWebSocket
+  webSocketInit();
+
+  // Serve files for Web Dashboard
+  webServerInit();
 }
 
 void loop()
