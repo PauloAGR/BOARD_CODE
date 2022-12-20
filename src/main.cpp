@@ -19,13 +19,13 @@ AsyncWebServer server(80);
 AsyncWebSocket webSocket("/ws");
 
 // TODO: Finish MQTT configurations --- Check MQTT conect config... almost done MQTT
-const char *MQTT_BROKER_ADRESS = "192.168.1.101";
+const char *MQTT_BROKER_ADRESS = "192.168.7.10";
 const uint16_t MQTT_PORT = 1883;
 const char *MQTT_CLIENT_NAME = "parzival";
 
 WiFiClient espHost;
 PubSubClient espMQTTClient(espHost);
-char *subsTopic = "esp32";
+char *subsTopic = "esp32/id/esp_parzival";
 String content = "";
 String payload;
 
@@ -152,9 +152,9 @@ void onMqttReceived(char *topic, byte *payload, unsigned int length)
   serializeJsonPretty(doc, Serial);
   String json = "";
   serializeJson(doc, json);
-  webSocket.printfAll((json).c_str());
-  // unsigned long data = doc["value"];
-  // Serial.print("Millis:");
+  // webSocket.printfAll((json).c_str());
+  //  unsigned long data = doc["value"];
+  //  Serial.print("Millis:");
 }
 
 void enableMQTT()
@@ -185,7 +185,7 @@ void publisMqtt(unsigned int data)
 {
   payload = "";
   StaticJsonDocument<300> jsonDoc;
-  jsonDoc["device_id"] = "parzival";
+  // jsonDoc["device_id"] = "parzival";
   jsonDoc["type"] = "light";
   jsonDoc["value"] = data;
   serializeJson(jsonDoc, payload);
