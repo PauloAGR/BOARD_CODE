@@ -6,15 +6,27 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "ESPAsyncWebServer.h"
+#include <PubSubClient.h>
 #include "SPIFFS.h"
 
 #define LIGHT_SENSOR_PIN 36 // ESP32 pin GIOP36 (ADC0)
 
-const char *ssid = "KNIGHTS_FORTRESS";
-const char *password = "covenant";
+const char *WIFI_NAME = "KNIGHTS_FORTRESS";
+const char *WIFI_PASS = "covenant";
 
 AsyncWebServer server(80);
 AsyncWebSocket webSocket("/ws");
+
+// TODO: Finish MQTT configurations --- Check MQTT conect config... almost done MQTT
+const char *MQTT_BROKER_ADRESS = "192.168.1.101";
+const uint16_t MQTT_PORT = 1883;
+const char *MQTT_CLIENT_NAME = "parzival";
+
+WiFiClient espHost;
+PubSubClient espMQTTClient(espHost);
+char *subsTopic = "esp32/id/parzival/type/light";
+String content = "";
+String payload;
 
 static int sensorVal = 0;
 
@@ -54,18 +66,6 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   }
 }
 
-void readLDR()
-{
-  // reads the input on analog pin (value between 0 and 4095)
-  int analogValue = analogRead(LIGHT_SENSOR_PIN);
-
-  if (analogValue != sensorVal)
-  {
-    sensorVal = analogValue;
-    webSocket.printfAll(std::to_string(sensorVal).c_str());
-  }
-}
-
 void fileSystemCheck()
 {
   if (!SPIFFS.begin())
@@ -75,10 +75,10 @@ void fileSystemCheck()
   }
 }
 
-void enableWifi()
+void enableWiFi()
 {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_NAME, WIFI_PASS);
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.printf("WiFi Failed!\n");
@@ -126,6 +126,79 @@ void webServerInit()
   server.begin();
 }
 
+void suscribeMqtt()
+{
+  espMQTTClient.subscribe("esp32/id/#");
+}
+
+void onMqttReceived(char *topic, byte *payload, unsigned int length)
+{
+  Serial.print("Received on ");
+  Serial.print(topic);
+  Serial.print(": ");
+
+  content = "";
+  for (size_t i = 0; i < length; i++)
+  {
+    content.concat((char)payload[i]);
+  }
+  Serial.print(content);
+  Serial.println();
+}
+
+void enableMQTT()
+{
+  espMQTTClient.setServer(MQTT_BROKER_ADRESS, MQTT_PORT);
+  suscribeMqtt();
+  espMQTTClient.setCallback(onMqttReceived);
+}
+
+void connectMqtt()
+{
+  while (!espMQTTClient.connected())
+  {
+    Serial.print("Starting MQTT connection...");
+    if (espMQTTClient.connect(MQTT_CLIENT_NAME))
+    {
+      suscribeMqtt();
+    }
+    else
+    {
+      Serial.print("Failed MQTT connection, rc=");
+      Serial.print(espMQTTClient.state());
+    }
+  }
+}
+
+void publisMqtt(unsigned int data)
+{
+  payload = "";
+  payload = String(data);
+  espMQTTClient.publish(subsTopic, (char *)payload.c_str());
+}
+
+void handleMqtt()
+{
+  if (!espMQTTClient.connected())
+  {
+    connectMqtt();
+  }
+  espMQTTClient.loop();
+}
+
+void readLDR()
+{
+  // reads the input on analog pin (value between 0 and 4095)
+  int analogValue = analogRead(LIGHT_SENSOR_PIN);
+
+  if (analogValue != sensorVal)
+  {
+    sensorVal = analogValue;
+    publisMqtt(sensorVal);
+    //webSocket.printfAll(std::to_string(sensorVal).c_str());
+  }
+}
+
 void setup()
 {
 
@@ -136,18 +209,25 @@ void setup()
   fileSystemCheck();
 
   // Connect to WIFI
-  enableWifi();
+  enableWiFi();
 
   // attach AsyncWebSocket
   webSocketInit();
 
   // Serve files for Web Dashboard
   webServerInit();
+
+  // Stablish conection to MQTT server
+  enableMQTT();
 }
 
 void loop()
 {
   // Read the LDR values continously
   readLDR();
-  delay(10000);
+
+  // MQTT
+  handleMqtt();
+
+  delay(5000);
 }
