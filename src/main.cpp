@@ -8,6 +8,7 @@
 #include "ESPAsyncWebServer.h"
 #include <PubSubClient.h>
 #include "SPIFFS.h"
+#include <ArduinoJson.h>
 
 #define LIGHT_SENSOR_PIN 36 // ESP32 pin GIOP36 (ADC0)
 
@@ -24,7 +25,7 @@ const char *MQTT_CLIENT_NAME = "parzival";
 
 WiFiClient espHost;
 PubSubClient espMQTTClient(espHost);
-char *subsTopic = "esp32/id/parzival/type/light";
+char *subsTopic = "esp32";
 String content = "";
 String payload;
 
@@ -128,22 +129,32 @@ void webServerInit()
 
 void suscribeMqtt()
 {
-  espMQTTClient.subscribe("esp32/id/#");
+  espMQTTClient.subscribe("esp32/#");
 }
 
 void onMqttReceived(char *topic, byte *payload, unsigned int length)
 {
   Serial.print("Received on ");
   Serial.print(topic);
-  Serial.print(": ");
+  Serial.println(": ");
 
   content = "";
   for (size_t i = 0; i < length; i++)
   {
     content.concat((char)payload[i]);
   }
-  Serial.print(content);
-  Serial.println();
+  // Serial.print(content);
+  // Serial.println();
+  StaticJsonDocument<300> doc;
+  DeserializationError error = deserializeJson(doc, content);
+  if (error)
+    return;
+  serializeJsonPretty(doc, Serial);
+  String json = "";
+  serializeJson(doc, json);
+  webSocket.printfAll((json).c_str());
+  // unsigned long data = doc["value"];
+  // Serial.print("Millis:");
 }
 
 void enableMQTT()
@@ -173,7 +184,11 @@ void connectMqtt()
 void publisMqtt(unsigned int data)
 {
   payload = "";
-  payload = String(data);
+  StaticJsonDocument<300> jsonDoc;
+  jsonDoc["device_id"] = "parzival";
+  jsonDoc["type"] = "light";
+  jsonDoc["value"] = data;
+  serializeJson(jsonDoc, payload);
   espMQTTClient.publish(subsTopic, (char *)payload.c_str());
 }
 
@@ -194,8 +209,7 @@ void readLDR()
   if (analogValue != sensorVal)
   {
     sensorVal = analogValue;
-    publisMqtt(sensorVal);
-    //webSocket.printfAll(std::to_string(sensorVal).c_str());
+    webSocket.printfAll(std::to_string(sensorVal).c_str());
   }
 }
 
@@ -225,7 +239,7 @@ void loop()
 {
   // Read the LDR values continously
   readLDR();
-
+  publisMqtt(sensorVal);
   // MQTT
   handleMqtt();
 
