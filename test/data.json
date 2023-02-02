@@ -1,0 +1,47 @@
+{
+    "settings": [
+        {
+            "NETWORK": {
+                "MQTT": {
+                    "BROKER_ADRESS": "IP_ADDRESS",
+                    "PORT": "PORT_NUMBER",
+                    "CLIENT": "ID_CLIENT",
+                    "PASS": "PASS_CLIENT",
+                    "TOPICS":["DEVICE/ID/"]
+                },
+                "WIFI_STA": {
+                    "SSID": "NAME",
+                    "PASSWD": "PASSWD",
+                    "STATIC_IP": "BOOL",
+                    "STATIC_IP_ADDRESS": "STATIC_IP_ADDRESS",
+                    "DNS": [
+                        "DNS_IP_ADDRESS_1",
+                        "DNS_IP_ADDRESS_2"
+                    ],
+                    "GATEWAY": "IP_GATEWAY"
+                },
+                "WIFI_AP": {
+                    "SSID": "NAME",
+                    "PASS": "PASS",
+                    "STATIC_IP": "BOOL",
+                    "STATIC_IP_ADDRESS": "STATIC_IP_ADDRESS",
+                    "GATEWAY": "IP_GATEWAY"
+                }
+            }
+        },
+        {
+            "DEVICE": {
+                "ID": "ID",
+                "VERSION": "VERSION"
+            }
+        },
+        {
+            "IO_PINS": [
+                {
+                    "NUMBER": "GPIO_NUMBER",
+                    "STATE": "HIGH/LOW"
+                }
+            ]
+        }
+    ]
+}
