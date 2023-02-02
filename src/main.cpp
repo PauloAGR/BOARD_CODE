@@ -1,6 +1,6 @@
 /*
  * Copyright © Paulo Andrés Guerrero Ramírez
- *
+ * Refactored code
  */
 
 #include <Arduino.h>
