@@ -1,5 +1,3 @@
-
-
 IPAddress CharToIP(const char *str)
 {
     uint8_t ip[4];
@@ -18,19 +16,20 @@ void fileSystemCheck()
 
 void setTime()
 {
-    configTime(0, 0, ntpServer);
-    setenv("TZ", "EST5EDT,M3.2.0,M11.1.0", 1); //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
-    tzset();
+    configTzTime(ntp.TIME_ZONE, ntp.SERVER_1, ntp.SERVER_2, ntp.SERVER_3);
+    // configTime(0, 0, ntp.SERVER);
+    // setenv("TZ", ntp.TIME_ZONE, 1); //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
+    // tzset();
     // printLocalTime();
 }
 
 void InitMDNS()
 {
-   if (!MDNS.begin(device.ID)) 
-   {             
-     Serial.println("Error iniciando mDNS");
-   }
-   Serial.println("mDNS iniciado");
+    if (!MDNS.begin(device.ID))
+    {
+        Serial.println("Error iniciando mDNS");
+    }
+    Serial.println("mDNS iniciado");
 }
 
 // void onMqttReceived(char *topic, byte *payload, unsigned int length)

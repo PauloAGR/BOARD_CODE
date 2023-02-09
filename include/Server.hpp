@@ -1,3 +1,6 @@
+AsyncWebServer server(80);
+AsyncWebSocket webSocket("/ws");
+
 void notFound(AsyncWebServerRequest *request)
 {
     request->send(404, "text/plain", "Not found");

@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include "esp_wifi.h"
 #include "ESPAsyncWebServer.h"
 #include <PubSubClient.h>
 #include "SPIFFS.h"
@@ -19,9 +20,13 @@
 #include "Server.hpp"
 #include "WebSocket.hpp"
 #include "Sensors.hpp"
+#include "Configutation.hpp"
+SENSOR light;
 
 void setup()
 {
+  strcpy(light.TYPE, "LIGHT");
+  light.VALUE = 0;
   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   Serial.begin(115200);
   Serial.println("Starting system...");
@@ -29,9 +34,8 @@ void setup()
   // Begin LittleFS for ESP8266 or SPIFFS for ESP32
   fileSystemCheck();
 
-  // Connect to WIFI
-  ConnectWiFi_STA();
-
+  // Init to WIFI
+  initWiFi();
   // attach AsyncWebSocket
   webSocketInit();
 
@@ -46,10 +50,8 @@ void setup()
 
 void loop()
 {
-
   // Read the LDR values continously
-  readLDR();
-
+  basicSensorRead(light);
   // MQTT
   handleMqtt();
   // printLocalTime();
