@@ -71,7 +71,7 @@ void initWiFi()
     }
     else if (device.WIFI_MODE == 2)
     {
-        enableWiFi_AP(device.sta.STATIC);
+        enableWiFi_AP(device.ap.STATIC);
     }
     else if (device.WIFI_MODE == 3)
     {
